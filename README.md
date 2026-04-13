@@ -56,7 +56,7 @@ Bash
 
 
 cat db/migration/V1__*.sql db/migration/V2__*.sql db/migration/V3__*.sql \
-    db/migration/V4__*.sql db/migration/V5__*.sql db/migration/V6__*.sql | \
+    db/migration/V4__*.sql db/migration/V5__*.sql db/migration/V6__*.sql db/migration/V7__*.sql | \
     psql -h localhost -U admin -d ledger_db
 ````
 
