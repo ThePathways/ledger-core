@@ -1,0 +1,71 @@
+name: Integrity Test Suite
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      # We use your exact docker-compose logic here
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: ledger_db
+          POSTGRES_USER: admin
+          POSTGRES_PASSWORD: password123
+        ports:
+          - 5432:5432
+        # Enable pg_cron in the test runner
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          -c shared_preload_libraries=pg_cron
+          -c cron.database_name=ledger_db
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install PostgreSQL Client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Wait for Postgres to be ready
+        run: |
+          until pg_isready -h localhost -p 5432 -U admin; do
+            echo "Waiting for database..."
+            sleep 2
+          done
+
+      - name: Run Migrations (V1 to V6)
+        run: |
+          # We concatenate and run files in order
+          cat db/migration/V1__*.sql \
+              db/migration/V2__*.sql \
+              db/migration/V3__*.sql \
+              db/migration/V4__*.sql \
+              db/migration/V5__*.sql \
+              db/migration/V6__*.sql | psql -h localhost -U admin -d ledger_db
+        env:
+          PGPASSWORD: password123
+
+      - name: Execute Integrity Test Suite
+        run: |
+          psql -h localhost -U admin -d ledger_db -f tests/integrity_suite.sql > test_output.log 2>&1
+          cat test_output.log
+          # Check if the log contains "PASSED" and doesn't contain "Failed"
+          if grep -q "PASSED" test_output.log && ! grep -q "Failed" test_output.log; then
+            echo "All integrity tests passed!"
+            exit 0
+          else
+            echo "Integrity tests failed!"
+            exit 1
+          fi
+        env:
+          PGPASSWORD: password123
