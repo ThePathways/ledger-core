@@ -1,3 +1,5 @@
+![Build Status](https://github.com/ThePathways/ledger-core/actions/workflows/test.yml/badge.svg)
+
 # ⚖️ Ledger-Core: Hardened SQL Accounting Engine
 
 Ledger-Core is a high-performance, immutable double-entry ledger implemented entirely within PostgreSQL 18.
