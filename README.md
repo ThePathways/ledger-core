@@ -20,6 +20,11 @@ A real-time balance cache is automatically verified against a "Ground Truth" cal
 ### Milestone Snapshots: 
 Background jobs powered by pg_cron create periodic "checkpoints," keeping balance calculations O(1) for fast lookups while maintaining O(N) auditability.
 
+## 📊 Real-Time Financial Reporting
+The engine includes a presentation layer (V7) that transforms raw ledger data into standard financial statements:
+* **Trial Balance View:** Instantly generates a list of all accounts with their net positions.
+* **Global Health Monitor:** A sentinel view that calculates total ledger discrepancy—mathematically proving the system is in balance ($0.00 difference).
+
 ## 🚀 Getting Started
 
 ### Prerequisites
