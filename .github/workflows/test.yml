@@ -11,18 +11,17 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
-      # We use your exact docker-compose logic here
       postgres:
         image: postgres:18
         env:
           POSTGRES_DB: ledger_db
-          POSTGRES_USER: admin
+          POSTGRES_USER: postgres
           POSTGRES_PASSWORD: password123
         ports:
           - 5432:5432
-        # Enable pg_cron in the test runner
+        # CRITICAL: This is how you enable pg_cron in GitHub Services
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U postgres -d ledger_db"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -36,36 +35,29 @@ jobs:
       - name: Install PostgreSQL Client
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
 
-      - name: Wait for Postgres to be ready
+      - name: Run Migrations
+        env:
+          PGPASSWORD: password123
         run: |
-          until pg_isready -h localhost -p 5432 -U admin; do
-            echo "Waiting for database..."
-            sleep 2
+          # Apply files in alphabetical order (V1 -> V6)
+          # We use the 'postgres' user to ensure we have permission to create extensions
+          for file in db/migration/V*.sql; do
+            echo "Applying $file..."
+            psql -h localhost -U postgres -d ledger_db -f "$file" || exit 1
           done
 
-      - name: Run Migrations (V1 to V6)
-        run: |
-          # We concatenate and run files in order
-          cat db/migration/V1__*.sql \
-              db/migration/V2__*.sql \
-              db/migration/V3__*.sql \
-              db/migration/V4__*.sql \
-              db/migration/V5__*.sql \
-              db/migration/V6__*.sql | psql -h localhost -U admin -d ledger_db
+      - name: Execute Integrity Test Suite
         env:
           PGPASSWORD: password123
-
-      - name: Execute Integrity Test Suite
         run: |
-          psql -h localhost -U admin -d ledger_db -f tests/integrity_suite.sql > test_output.log 2>&1
+          psql -h localhost -U postgres -d ledger_db -f tests/integrity_suite.sql > test_output.log 2>&1
           cat test_output.log
-          # Check if the log contains "PASSED" and doesn't contain "Failed"
-          if grep -q "PASSED" test_output.log && ! grep -q "Failed" test_output.log; then
-            echo "All integrity tests passed!"
+          
+          # Check for success indicators in your specific test script
+          if grep -q "PASSED" test_output.log && ! grep -iq "failed" test_output.log; then
+            echo "Integrity check successful."
             exit 0
           else
-            echo "Integrity tests failed!"
+            echo "Integrity check failed. Check the logs."
             exit 1
           fi
-        env:
-          PGPASSWORD: password123
