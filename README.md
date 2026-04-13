@@ -71,6 +71,7 @@ You should see NOTICE logs confirming that the engine successfully blocked unbal
 
 ## 📂 Project Structure
 
+````
 ledger-core/
 ├── db/
 │   └── migration/
@@ -85,7 +86,7 @@ ledger-core/
 │   └── integrity_suite.sql                 # Destructive test suite
 ├── docker-compose.yml                       # PostgreSQL 18 + pg_cron setup
 └── README.md
-
+````
 
 ### UUID v7 Primary Keys
 
