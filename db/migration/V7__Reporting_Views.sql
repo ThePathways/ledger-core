@@ -15,12 +15,12 @@ WITH account_sums AS (
 SELECT 
     a.code AS account_code,
     a.name AS account_name,
-    a.category,
+    a.type,
     s.total_debit,
     s.total_credit,
     -- Calculate net balance based on account category rules
     CASE 
-        WHEN a.category IN ('ASSET', 'EXPENSE') THEN s.total_debit - s.total_credit
+        WHEN a.type IN ('asset','expense') THEN s.total_debit - s.total_credit
         ELSE s.total_credit - s.total_debit 
     END AS net_balance
 FROM accounts a
