@@ -2,10 +2,10 @@
 
 -- 1. Create Accounts
 INSERT INTO accounts (name, type) VALUES 
-('Cash', 'asset'),
-('Accounts Receivable', 'asset'),
-('Equipment', 'asset'),
-('Unearned Revenue', 'liability'),
-('Retained Earnings', 'equity'),
-('Sales Revenue', 'revenue'),
-('Rent Expense', 'expense');
+('1000', 'Cash', 'asset'),
+('1010', 'Accounts Receivable', 'asset'),
+('1200', 'Equipment', 'asset'),
+('2000', 'Unearned Revenue', 'liability'),
+('3000', 'Retained Earnings', 'equity'),
+('4000', 'Sales Revenue', 'revenue'),
+('5000', 'Rent Expense', 'expense');
