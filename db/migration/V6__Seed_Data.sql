@@ -1,7 +1,7 @@
 -- V6__Seed_Data.sql
 
 -- 1. Create Accounts
-INSERT INTO accounts (name, type) VALUES 
+INSERT INTO accounts (code, name, type) VALUES 
 ('1000', 'Cash', 'asset'),
 ('1010', 'Accounts Receivable', 'asset'),
 ('1200', 'Equipment', 'asset'),
