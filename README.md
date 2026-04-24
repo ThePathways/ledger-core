@@ -84,69 +84,44 @@ You should see NOTICE logs confirming that the engine successfully blocked unbal
 ## Ledger Architecture Diagram
 
 ```mermaid
-erDiagram
-    %% Entities
-    ACCOUNTS ||--o{ ENTRIES : "tracked in"
-    TRANSACTIONS ||--|{ ENTRIES : "composed of"
-    ACCOUNTS ||--|| ACCOUNT_BALANCES : "cached as"
-    ACCOUNTS ||--|| ACCOUNT_MILESTONES : "checkpointed at"
-
-    %% Table Structures
-    ACCOUNTS {
-        uuid id PK
-        varchar code
-        text type
-    }
-
-    TRANSACTIONS {
-        uuid id PK
-        text description
-        timestamptz posted_at
-    }
-
-    ENTRIES {
-        uuid id PK
-        uuid transaction_id FK
-        uuid account_id FK
-        numeric amount
-        text direction
-    }
-
-    ACCOUNT_BALANCES {
-        uuid account_id PK, FK
-        numeric total_debit
-        numeric total_credit
-        numeric current_balance "GENERATED"
-    }
-
-    ACCOUNT_MILESTONES {
-        uuid account_id PK, FK
-        uuid milestone_entry_id
-        numeric verified_balance
-    }
-
-    %% Logic and Guarding Flow
-    subgraph Integrity_Layer [Data Guarding]
-        fn_enforce_double_entry {{Trigger: Double Entry Check}}
-        fn_block_modifications {{Trigger: Immutability Guard}}
-        fn_sync_account_balance {{Trigger: Balance Sentinel}}
+graph TD
+    %% Entities/Tables
+    subgraph Tables [Database Schema]
+        ACCOUNTS[(accounts)]
+        TRANSACTIONS[(transactions)]
+        ENTRIES[(entries)]
+        BALANCES[(account_balances)]
+        MILESTONES[(account_milestones)]
     end
 
+    %% Logic/Triggers
+    subgraph Integrity [Data Guarding]
+        fn_double[fn_enforce_double_entry]
+        fn_immutable[fn_block_modifications]
+        fn_sync[fn_sync_account_balance]
+    end
+
+    %% Maintenance
     subgraph Automation [Maintenance]
-        pg_cron [[pg_cron Scheduler]]
-        pr_create_account_milestones [[Milestone Procedure]]
+        cron[pg_cron Scheduler]
+        pr_milestone[pr_create_account_milestones]
     end
 
-    %% Flow Connections
-    ENTRIES -.-> fn_enforce_double_entry : "Validates Sums"
-    ENTRIES -.-> fn_block_modifications : "Prevents Update/Delete"
-    ENTRIES -.-> fn_sync_account_balance : "Updates Cache"
+    %% Relationships
+    TRANSACTIONS -->|Header| ENTRIES
+    ACCOUNTS -->|Reference| ENTRIES
     
-    fn_sync_account_balance -.-> ACCOUNT_BALANCES : "Increments"
-    fn_sync_account_balance -.-> ACCOUNT_MILESTONES : "Verifies against Delta"
-    
-    pg_cron --> pr_create_account_milestones : "Every 10 Mins"
-    pr_create_account_milestones --> ACCOUNT_MILESTONES : "Advances Checkpoint"
+    %% Trigger Flow
+    ENTRIES ==>|INSERT| fn_double
+    ENTRIES ==>|INSERT| fn_immutable
+    ENTRIES ==>|INSERT| fn_sync
+
+    fn_sync -->|Update| BALANCES
+    fn_sync -.->|Verify| MILESTONES
+
+    %% Cron Flow
+    cron -->|Every 10m| pr_milestone
+    pr_milestone -->|Advance| MILESTONES
 ```
 
 
